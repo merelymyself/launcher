@@ -16,6 +16,7 @@ use tokio::io::AsyncWrite;
 struct Item {
     appid: String,
     description: String,
+    actions: Vec<Action>,
     exec: String,
     icon: Option<String>,
     keywords: Option<Vec<String>>,
@@ -23,6 +24,13 @@ struct Item {
     path: PathBuf,
     prefers_non_default_gpu: bool,
     src: PathSource,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Action {
+    pub name: String,
+    pub description: String,
+    pub exec: String,
 }
 
 impl Hash for Item {
@@ -150,6 +158,25 @@ impl<W: AsyncWrite + Unpin> App<W> {
                                 continue;
                             }
 
+                            let mut actions = vec![];
+
+                            if let Some(entries) = entry.actions() {
+                                for action in entries.split(';') {
+                                    let action =
+                                        entry.action_name(action, locale).and_then(|name| {
+                                            entry.action_exec(action).map(|exec| Action {
+                                                name: action.to_string(),
+                                                description: name.to_string(),
+                                                exec: exec.to_string(),
+                                            })
+                                        });
+
+                                    if let Some(action) = action {
+                                        actions.push(action);
+                                    }
+                                }
+                            }
+
                             let item = Item {
                                 appid: entry.appid.to_owned(),
                                 name: name.to_string(),
@@ -166,6 +193,7 @@ impl<W: AsyncWrite + Unpin> App<W> {
                                 path: path.clone(),
                                 prefers_non_default_gpu: entry.prefers_non_default_gpu(),
                                 src,
+                                actions,
                             };
 
                             deduplicator.insert(item);
@@ -219,12 +247,28 @@ impl<W: AsyncWrite + Unpin> App<W> {
                 options.push(ContextOption {
                     id: 0,
                     name: (if entry.prefers_non_default_gpu {
+                        "Integrated Graphics"
+                    } else {
+                        "Discrete Graphics"
+                    })
+                    .to_owned(),
+                    description: (if entry.prefers_non_default_gpu {
                         "Launch Using Integrated Graphics Card"
                     } else {
                         "Launch Using Discrete Graphics Card"
                     })
                     .to_owned(),
+                    exec: None,
                 });
+            }
+
+            for (idx, action) in entry.actions.iter().enumerate() {
+                options.push(ContextOption {
+                    id: idx as u32,
+                    name: action.name.to_owned(),
+                    description: action.description.to_owned(),
+                    exec: Some(action.exec.to_string()),
+                })
             }
 
             if !options.is_empty() {

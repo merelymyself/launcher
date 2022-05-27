@@ -48,6 +48,8 @@ pub type Indice = u32;
 pub struct ContextOption {
     pub id: Indice,
     pub name: String,
+    pub description: String,
+    pub exec: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
