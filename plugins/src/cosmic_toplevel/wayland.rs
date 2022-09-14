@@ -43,9 +43,10 @@ pub enum ToplevelAction {
 pub enum ToplevelEvent {
     Add(Toplevel),
     Remove(Toplevel),
+    Quit,
 }
 
-pub fn spawn_toplevels(tx: Sender<ToplevelEvent>) -> SyncSender<ToplevelAction> {
+pub fn spawn_toplevels(mut tx: Sender<ToplevelEvent>) -> SyncSender<ToplevelAction> {
     let (workspaces_tx, workspaces_rx) = calloop::channel::sync_channel(100);
 
     if let Ok(Ok(conn)) = std::env::var("WAYLAND_DISPLAY")
@@ -126,7 +127,7 @@ pub fn spawn_toplevels(tx: Sender<ToplevelEvent>) -> SyncSender<ToplevelAction> 
         });
     } else {
         eprintln!("ENV variable WAYLAND_DISPLAY is missing. Exiting...");
-        std::process::exit(1);
+        let _ = futures::executor::block_on(tx.send(ToplevelEvent::Quit));
     }
 
     workspaces_tx

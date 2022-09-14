@@ -70,6 +70,7 @@ pub async fn main() {
                         app.ids_to_ignore
                             .push(remove_toplevel.toplevel_handle.id().protocol_id());
                     }
+                    ToplevelEvent::Quit => break,
                 }
             }
             _ => break,
