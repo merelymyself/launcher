@@ -125,7 +125,7 @@ impl<W: AsyncWrite + Unpin> App<W> {
                     Some("com.system76.CosmicAppletHost"),
                     "/com/system76/CosmicAppletHost",
                     Some("com.system76.CosmicAppletHost"),
-                    "Toggle",
+                    "Hide",
                     &("com.system76.CosmicLauncher"),
                 )
                 .await;
